@@ -62,6 +62,18 @@ Crypto Priors.
 
  * We do not trust anyone who prefers to refer to GPG over OpenPGP.
 
+ * We categorically reject the Copenhagen interpretation, and specifically
+   reject "no conspiracy". Rather, we assume God, and that God may also send
+   "great delusions". 
+
+ * The end-user must themselves roll the dice, or shuffle cards, away from
+   any internet or devices, and especially cameras and 5G gateways or devices.
+
+ * We assume that our minds may also be read remotely, and we must NOT 
+   mentally, verbally, visually, or semantically see or iterate any entropy
+   data. This means that even when writing down the dice rolls, we must take
+   care not to see the whole series of rolls written down at once.
+
 Crypto Pre-launch TODOs.
   
 Crypto Post Launch TODOs.
