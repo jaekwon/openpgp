@@ -57,6 +57,7 @@ func main() {
 	// Define flags
 	keySize := flag.Int("bits", 8192, "RSA key size in bits (default: 8192)")
 	entropy := flag.String("entropy", "", "Entropy string (dice rolls or card shuffle)")
+	raw := flag.Bool("raw", false, "Treat entropy as raw string without format parsing")
 	debug := flag.Bool("debug", false, "Show debug information about entropy processing")
 	help := flag.Bool("help", false, "Show help message")
 	
@@ -109,37 +110,51 @@ func main() {
 
 	fmt.Printf("Key size: %d bits\n", sz)
 	
-	inputBytes := []byte(text)
+	// Parse entropy to detect format and convert to efficient representation
+	parsedEntropy, err := parseEntropy(text, *raw)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "\nERROR: %s\n", err)
+		fmt.Fprintf(os.Stderr, "\nThe entropy format was not recognized as:\n")
+		fmt.Fprintf(os.Stderr, "  - D20 dice rolls (e.g., \"4 2 20 15 8...\")\n")
+		fmt.Fprintf(os.Stderr, "  - Card shuffle (e.g., \"As 4d Jh Kc...\")\n")
+		fmt.Fprintf(os.Stderr, "\nUse -raw flag to treat input as raw bytes without parsing.\n")
+		os.Exit(1)
+	}
+	
+	// Show format detection result
+	switch parsedEntropy.Type {
+	case EntropyTypeDice:
+		fmt.Println("Entropy format: D20 dice rolls")
+	case EntropyTypeCards:
+		fmt.Println("Entropy format: Card shuffle")
+	case EntropyTypeRaw:
+		fmt.Println("Entropy format: Raw bytes (no parsing)")
+	}
 	
 	if *debug {
 		fmt.Printf("Entropy: %s\n", text)
 		fmt.Println()
-
-		// Debug information about entropy processing
-		fmt.Println("DEBUG: === Entropy Processing Steps ===")
-		fmt.Printf("DEBUG: Input entropy string: %q\n", text)
-		fmt.Printf("DEBUG: Input length: %d bytes\n", len(text))
-		fmt.Printf("DEBUG: Input bytes (hex): %x\n", inputBytes)
+		debugPrintParsedEntropy(parsedEntropy)
 		fmt.Println()
 
 		// Show fold256 processing
 		fmt.Println("DEBUG: === fold256 Processing ===")
-		fmt.Printf("DEBUG: Folding %d bytes into 32 bytes\n", len(inputBytes))
+		fmt.Printf("DEBUG: Folding %d bytes into 32 bytes\n", len(parsedEntropy.ParsedData))
 		
 		// Show chunk breakdown
 		chunkSize := 32
-		numChunks := (len(inputBytes) + chunkSize - 1) / chunkSize
+		numChunks := (len(parsedEntropy.ParsedData) + chunkSize - 1) / chunkSize
 		fmt.Printf("DEBUG: Number of 32-byte chunks: %d\n", numChunks)
 		
 		for i := 0; i < numChunks; i++ {
 			start := i * chunkSize
-			end := min((i+1)*chunkSize, len(inputBytes))
-			chunk := inputBytes[start:end]
+			end := min((i+1)*chunkSize, len(parsedEntropy.ParsedData))
+			chunk := parsedEntropy.ParsedData[start:end]
 			fmt.Printf("DEBUG: Chunk %d (bytes %d-%d): %x\n", i, start, end-1, chunk)
 		}
 	}
 	
-	ent := fold256(inputBytes)
+	ent := fold256(parsedEntropy.ParsedData)
 	
 	if *debug {
 		fmt.Printf("DEBUG: fold256 result: %x\n", ent)
