@@ -68,7 +68,7 @@ func TestXor(t *testing.T) {
 	}
 }
 
-func TestFold256(t *testing.T) {
+func TestHash256(t *testing.T) {
 	tests := []struct {
 		name  string
 		input []byte
@@ -77,51 +77,50 @@ func TestFold256(t *testing.T) {
 		{
 			name:  "empty input",
 			input: []byte{},
-			want:  b256{},
+			want: b256{
+				0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14,
+				0x9a, 0xfb, 0xf4, 0xc8, 0x99, 0x6f, 0xb9, 0x24,
+				0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c,
+				0xa4, 0x95, 0x99, 0x1b, 0x78, 0x52, 0xb8, 0x55,
+			}, // SHA256 of empty input
 		},
 		{
 			name:  "single byte",
 			input: []byte("a"),
-			want:  b256{97}, // 'a' = 97
+			want: b256{
+				0xca, 0x97, 0x81, 0x12, 0xca, 0x1b, 0xbd, 0xca,
+				0xfa, 0xc2, 0x31, 0xb3, 0x9a, 0x23, 0xdc, 0x4d,
+				0xa7, 0x86, 0xef, 0xf8, 0x14, 0x7c, 0x4e, 0x72,
+				0xb9, 0x80, 0x77, 0x85, 0xaf, 0xee, 0x48, 0xbb,
+			}, // SHA256 of "a"
 		},
 		{
 			name:  "three bytes",
 			input: []byte("abc"),
-			want:  b256{97, 98, 99}, // 'a'=97, 'b'=98, 'c'=99
+			want: b256{
+				0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea,
+				0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23,
+				0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c,
+				0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad,
+			}, // SHA256 of "abc"
 		},
 		{
-			name:  "32 bytes exact",
-			input: []byte("12345678901234567890123456789012"),
-			want: b256{49, 50, 51, 52, 53, 54, 55, 56, 57, 48,
-				49, 50, 51, 52, 53, 54, 55, 56, 57, 48,
-				49, 50, 51, 52, 53, 54, 55, 56, 57, 48,
-				49, 50}, // ASCII values of "12345678901234567890123456789012"
-		},
-		{
-			name:  "33 bytes (one byte overflow)",
-			input: []byte("123456789012345678901234567890122"),
-			want: b256{3, 50, 51, 52, 53, 54, 55, 56, 57, 48,
-				49, 50, 51, 52, 53, 54, 55, 56, 57, 48,
-				49, 50, 51, 52, 53, 54, 55, 56, 57, 48,
-				49, 50}, // '1' XOR '2' = 49 XOR 50 = 3
-		},
-		{
-			name:  "64 bytes (two identical chunks)",
-			input: []byte("1234567890123456789012345678901212345678901234567890123456789012"),
-			want:  b256{}, // XOR of two identical chunks = all zeros
-		},
-		{
-			name:  "65 bytes",
-			input: []byte("12345678901234567890123456789012123456789012345678901234567890121"),
-			want:  b256{49}, // Only first byte is '1' (49), rest zeros from XOR
+			name:  "test entropy",
+			input: []byte("test entropy"),
+			want: b256{
+				0x8d, 0xcb, 0x19, 0x6f, 0x4d, 0x40, 0x08, 0x2f,
+				0x71, 0xcb, 0x21, 0x98, 0xe1, 0xf3, 0x18, 0xdb,
+				0x0f, 0xf7, 0x85, 0x4d, 0x3e, 0x60, 0xe6, 0xec,
+				0xac, 0xfa, 0xd4, 0x66, 0xe5, 0x28, 0xbd, 0xbb,
+			}, // SHA256 of "test entropy"
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := fold256(tt.input)
+			got := hash256(tt.input)
 			if !bytes.Equal(got[:], tt.want[:]) {
-				t.Errorf("fold256(%q) = %x, want %x", tt.input, got, tt.want)
+				t.Errorf("hash256(%q) = %x, want %x", tt.input, got, tt.want)
 			}
 		})
 	}

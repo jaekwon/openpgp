@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -23,15 +24,10 @@ func min(a, b int) int {
 }
 
 // x can be any length, but output is always 256 bits.
-func fold256(x []byte) (y b256) {
-	t := (len(x) + len(y) - 1) / len(y)
-	for i := 0; i < t; i++ {
-		xi := b256{}
-		xs := len(y) * i
-		xe := min(len(y)*(i+1), len(x))
-		copy(xi[:], x[xs:xe])
-		y = xor(y, xi)
-	}
+// Uses SHA256 for cryptographically secure entropy compression
+func hash256(x []byte) (y b256) {
+	h := sha256.Sum256(x)
+	copy(y[:], h[:])
 	return y
 }
 
@@ -109,40 +105,26 @@ func main() {
 
 	fmt.Printf("Key size: %d bits\n", sz)
 	
+	// Trim whitespace from entropy
+	text = strings.TrimSpace(text)
 	inputBytes := []byte(text)
 	
 	if *debug {
 		fmt.Printf("Entropy: %s\n", text)
+		fmt.Printf("Entropy length: %d bytes\n", len(inputBytes))
+		fmt.Printf("Entropy bytes (hex): %x\n", inputBytes)
 		fmt.Println()
 
-		// Debug information about entropy processing
-		fmt.Println("DEBUG: === Entropy Processing Steps ===")
-		fmt.Printf("DEBUG: Input entropy string: %q\n", text)
-		fmt.Printf("DEBUG: Input length: %d bytes\n", len(text))
-		fmt.Printf("DEBUG: Input bytes (hex): %x\n", inputBytes)
-		fmt.Println()
-
-		// Show fold256 processing
-		fmt.Println("DEBUG: === fold256 Processing ===")
-		fmt.Printf("DEBUG: Folding %d bytes into 32 bytes\n", len(inputBytes))
-		
-		// Show chunk breakdown
-		chunkSize := 32
-		numChunks := (len(inputBytes) + chunkSize - 1) / chunkSize
-		fmt.Printf("DEBUG: Number of 32-byte chunks: %d\n", numChunks)
-		
-		for i := 0; i < numChunks; i++ {
-			start := i * chunkSize
-			end := min((i+1)*chunkSize, len(inputBytes))
-			chunk := inputBytes[start:end]
-			fmt.Printf("DEBUG: Chunk %d (bytes %d-%d): %x\n", i, start, end-1, chunk)
-		}
+		// Show hash256 processing
+		fmt.Println("DEBUG: === hash256 Processing ===")
+		fmt.Printf("DEBUG: Computing SHA256 of %d bytes\n", len(inputBytes))
+		fmt.Printf("DEBUG: Input bytes: %x\n", inputBytes)
 	}
 	
-	ent := fold256(inputBytes)
+	ent := hash256(inputBytes)
 	
 	if *debug {
-		fmt.Printf("DEBUG: fold256 result: %x\n", ent)
+		fmt.Printf("DEBUG: hash256 result: %x\n", ent)
 		fmt.Println()
 
 		// Show next256 processing
