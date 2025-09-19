@@ -1,12 +1,12 @@
 package main
 
 import (
-	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
 	"flag"
 	"fmt"
+	"github.com/jaekwon/openpgp/drsa"
 	"os"
 	"sync"
 )
@@ -206,7 +206,7 @@ func main() {
 		fmt.Println("Generating RSA key...")
 	}
 
-	privateKey, err := rsa.GenerateKey(reader2, sz)
+	privateKey, err := drsa.GenerateKey(reader2, sz)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error generating RSA key: %s", err)
 		return
