@@ -1,0 +1,211 @@
+package main
+
+import (
+	"bytes"
+	"testing"
+)
+
+func TestMin(t *testing.T) {
+	tests := []struct {
+		a, b int
+		want int
+	}{
+		{1, 2, 1},
+		{2, 1, 1},
+		{5, 5, 5},
+		{-1, 0, -1},
+		{100, 99, 99},
+	}
+
+	for _, tt := range tests {
+		got := min(tt.a, tt.b)
+		if got != tt.want {
+			t.Errorf("min(%d, %d) = %d, want %d", tt.a, tt.b, got, tt.want)
+		}
+	}
+}
+
+func TestXor(t *testing.T) {
+	tests := []struct {
+		name string
+		a    b256
+		b    b256
+		want b256
+	}{
+		{
+			name: "all zeros",
+			a:    b256{},
+			b:    b256{},
+			want: b256{},
+		},
+		{
+			name: "xor with self gives zeros",
+			a:    b256{0xFF, 0x12, 0x34},
+			b:    b256{0xFF, 0x12, 0x34},
+			want: b256{},
+		},
+		{
+			name: "xor with different values",
+			a:    b256{0xFF},
+			b:    b256{0x0F},
+			want: b256{0xF0},
+		},
+		{
+			name: "full xor operation",
+			a:    b256{0x01, 0x02, 0x03, 0x04},
+			b:    b256{0x10, 0x20, 0x30, 0x40},
+			want: b256{0x11, 0x22, 0x33, 0x44},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := xor(tt.a, tt.b)
+			if !bytes.Equal(got[:], tt.want[:]) {
+				t.Errorf("xor() = %x, want %x", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHash256(t *testing.T) {
+	tests := []struct {
+		name  string
+		input []byte
+		want  b256
+	}{
+		{
+			name:  "empty input",
+			input: []byte{},
+			want: b256{
+				0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14,
+				0x9a, 0xfb, 0xf4, 0xc8, 0x99, 0x6f, 0xb9, 0x24,
+				0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c,
+				0xa4, 0x95, 0x99, 0x1b, 0x78, 0x52, 0xb8, 0x55,
+			}, // SHA256 of empty input
+		},
+		{
+			name:  "single byte",
+			input: []byte("a"),
+			want: b256{
+				0xca, 0x97, 0x81, 0x12, 0xca, 0x1b, 0xbd, 0xca,
+				0xfa, 0xc2, 0x31, 0xb3, 0x9a, 0x23, 0xdc, 0x4d,
+				0xa7, 0x86, 0xef, 0xf8, 0x14, 0x7c, 0x4e, 0x72,
+				0xb9, 0x80, 0x77, 0x85, 0xaf, 0xee, 0x48, 0xbb,
+			}, // SHA256 of "a"
+		},
+		{
+			name:  "three bytes",
+			input: []byte("abc"),
+			want: b256{
+				0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea,
+				0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23,
+				0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c,
+				0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad,
+			}, // SHA256 of "abc"
+		},
+		{
+			name:  "test entropy",
+			input: []byte("test entropy"),
+			want: b256{
+				0x8d, 0xcb, 0x19, 0x6f, 0x4d, 0x40, 0x08, 0x2f,
+				0x71, 0xcb, 0x21, 0x98, 0xe1, 0xf3, 0x18, 0xdb,
+				0x0f, 0xf7, 0x85, 0x4d, 0x3e, 0x60, 0xe6, 0xec,
+				0xac, 0xfa, 0xd4, 0x66, 0xe5, 0x28, 0xbd, 0xbb,
+			}, // SHA256 of "test entropy"
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := hash256(tt.input)
+			if !bytes.Equal(got[:], tt.want[:]) {
+				t.Errorf("hash256(%q) = %x, want %x", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNext256(t *testing.T) {
+	tests := []struct {
+		name string
+		ent  b256
+		last b256
+		want b256
+	}{
+		{
+			name: "all zeros",
+			ent:  b256{},
+			last: b256{},
+			want: b256{
+				0x66, 0x68, 0x7a, 0xad, 0xf8, 0x62, 0xbd, 0x77,
+				0x6c, 0x8f, 0xc1, 0x8b, 0x8e, 0x9f, 0x8e, 0x20,
+				0x08, 0x97, 0x14, 0x85, 0x6e, 0xe2, 0x33, 0xb3,
+				0x90, 0x2a, 0x59, 0x1d, 0x0d, 0x5f, 0x29, 0x25,
+			}, // SHA256 of all zeros
+		},
+		{
+			name: "entropy with first byte 0xFF",
+			ent:  b256{0xFF},
+			last: b256{},
+			want: b256{
+				0xd2, 0x2f, 0x8e, 0x34, 0x50, 0x65, 0x57, 0x84,
+				0x85, 0x38, 0x79, 0xc7, 0xec, 0xfe, 0xe4, 0xff,
+				0x36, 0x19, 0x23, 0x52, 0xf6, 0xff, 0xe0, 0xd4,
+				0x05, 0x93, 0xde, 0xe5, 0x6f, 0x58, 0x33, 0x50,
+			}, // SHA256 of [0xFF, 0, 0, ...]
+		},
+		{
+			name: "with non-zero last",
+			ent:  b256{0x01},
+			last: b256{0x02},
+			want: b256{
+				0x91, 0xd3, 0x82, 0x7f, 0x05, 0x2f, 0x5a, 0x4b,
+				0x44, 0xd5, 0xfe, 0x2b, 0xed, 0x65, 0x7c, 0x75,
+				0x22, 0x47, 0x36, 0x5d, 0x94, 0xf8, 0x0a, 0x33,
+				0xcb, 0x09, 0xc1, 0x43, 0x6a, 0x16, 0xb1, 0x25,
+			}, // SHA256 of (0x01 XOR 0x02) = SHA256 of [0x03, 0, 0, ...]
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := next256(tt.ent, tt.last)
+			if !bytes.Equal(got[:], tt.want[:]) {
+				t.Errorf("next256() = %x, want %x", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNext256Deterministic(t *testing.T) {
+	// Test that same inputs always produce same outputs
+	ent := b256{0xAB, 0xCD}
+	last := b256{0x12, 0x34}
+
+	result1 := next256(ent, last)
+	result2 := next256(ent, last)
+
+	if !bytes.Equal(result1[:], result2[:]) {
+		t.Errorf("next256 not deterministic: %x != %x", result1, result2)
+	}
+}
+
+func TestNext256Chaining(t *testing.T) {
+	// Test that chaining produces different outputs
+	ent := b256{0x42}
+
+	result1 := next256(ent, b256{})
+	result2 := next256(ent, result1)
+	result3 := next256(ent, result2)
+
+	if bytes.Equal(result1[:], result2[:]) {
+		t.Errorf("next256 chaining produced same output: %x", result1)
+	}
+	if bytes.Equal(result2[:], result3[:]) {
+		t.Errorf("next256 chaining produced same output: %x", result2)
+	}
+	if bytes.Equal(result1[:], result3[:]) {
+		t.Errorf("next256 chaining produced same output: %x", result1)
+	}
+}
