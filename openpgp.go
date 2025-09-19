@@ -7,12 +7,51 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"io"
 	"os"
-	"time"
+	"sync"
 )
 
 type b256 [32]byte
+
+type deterministicReader struct {
+	ent    b256
+	last   b256
+	buffer []byte
+	pos    int
+	debug  bool
+	mu     sync.Mutex
+}
+
+func (dr *deterministicReader) Read(p []byte) (n int, err error) {
+	dr.mu.Lock()
+	defer dr.mu.Unlock()
+	
+	needed := len(p)
+	n = 0
+
+	for n < needed {
+		// Refill buffer if empty
+		if dr.pos >= len(dr.buffer) {
+			dr.last = next256(dr.ent, dr.last)
+			dr.buffer = dr.last[:]
+			dr.pos = 0
+			
+			if dr.debug {
+				fmt.Printf("DEBUG: Generated next256 block: %x\n", dr.last)
+			}
+		}
+
+		// Copy available bytes
+		available := len(dr.buffer) - dr.pos
+		toCopy := min(available, needed-n)
+		copy(p[n:], dr.buffer[dr.pos:dr.pos+toCopy])
+		dr.pos += toCopy
+		n += toCopy
+	}
+
+	return n, nil
+}
+
 
 func min(a, b int) int {
 	if a < b {
@@ -150,38 +189,13 @@ func main() {
 		fmt.Printf("DEBUG: Initial entropy (ent): %x\n", ent)
 	}
 	
-	// Run goroutine for writing pseudo-random bytes from entropy.
-	reader2, writer := io.Pipe()
-	written := 0
-	go func() {
-		last := b256{}
-		if *debug {
-			fmt.Printf("DEBUG: Initial last value: %x\n", last)
-		}
-		
-		// First iteration details
-		next := next256(ent, last)
-		if *debug {
-			fmt.Printf("DEBUG: First next256 call:\n")
-			fmt.Printf("DEBUG:   ent XOR last = %x\n", xor(ent, last))
-			fmt.Printf("DEBUG:   SHA256 result = %x\n", next)
-		}
-		
-		iteration := 0
-		for {
-			writer.Write(next[:])
-			written += len(next)
-			iteration++
-			
-			// Only show debug for first few iterations
-			if *debug && iteration <= 3 {
-				fmt.Printf("DEBUG: Iteration %d: wrote %d bytes, total: %d\n", iteration, len(next), written)
-			}
-			
-			time.Sleep(time.Millisecond)
-			next = next256(ent, next)
-		}
-	}()
+	// Create a deterministic reader for RSA key generation
+	reader2 := &deterministicReader{
+		ent:   ent,
+		last:  b256{},
+		pos:   0,
+		debug: *debug,
+	}
 
 	// Generate key using above source of random bytes...
 	if *debug {

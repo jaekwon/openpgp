@@ -1,3 +1,3 @@
 module github.com/jaekwon/openpgp
 
-go 1.23.8
+go 1.25.1
