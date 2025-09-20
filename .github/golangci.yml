@@ -1,14 +1,14 @@
-version: '2'
+version: "2"
 
 run:
     concurrency: 8
-    go: ''
+    go: ""
     modules-download-mode: readonly
     issues-exit-code: 1
     tests: true
     allow-parallel-runners: false
 output:
-    path-prefix: ''
+    path-prefix: ""
 linters:
     default: none
     enable:

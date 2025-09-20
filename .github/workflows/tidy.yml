@@ -1,0 +1,31 @@
+name: Check go.mod tidy
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+jobs:
+    tidy-golang:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version-file: go.mod
+
+            - name: Check go mod tidy
+              run: |
+                  checksum_before=$(cat go.mod go.sum 2>/dev/null | sha256sum | cut -d' ' -f1)
+                  make tidy
+                  checksum_after=$(cat go.mod go.sum 2>/dev/null | sha256sum | cut -d' ' -f1)
+
+                  if [ "$checksum_before" != "$checksum_after" ]; then
+                      echo "Error: go.mod or go.sum files were modified by 'go mod tidy'"
+                      echo "Please run 'go mod tidy' locally and commit the changes"
+                      exit 1
+                  fi
