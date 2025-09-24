@@ -2,16 +2,17 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package rsa_test
+package drsa_test
 
 import (
 	"bufio"
 	"bytes"
 	"crypto"
-	"crypto/internal/boring"
-	"crypto/internal/cryptotest"
+	"github.com/jaekwon/openpgp/drsa/internal/boring"
+	// "github.com/jaekwon/openpgp/drsa/internal/cryptotest"
 	"crypto/rand"
-	. "crypto/rsa"
+	"crypto/rsa"
+	. "github.com/jaekwon/openpgp/drsa"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
@@ -168,7 +169,7 @@ func testKeyBasics(t *testing.T, priv *PrivateKey) {
 }
 
 func TestAllocations(t *testing.T) {
-	cryptotest.SkipTestAllocations(t)
+	t.Skip("cryptotest not available in drsa fork")
 
 	m := []byte("Hello Gophers")
 	c, err := EncryptPKCS1v15(rand.Reader, &test2048Key.PublicKey, m)
@@ -438,13 +439,46 @@ func parseKey(s string) *PrivateKey {
 		if err != nil {
 			panic(err)
 		}
-		return k.(*PrivateKey)
+		// Convert from crypto/rsa to drsa
+		rsaKey := k.(*rsa.PrivateKey)
+		priv := &PrivateKey{
+			PublicKey: PublicKey{
+				N: rsaKey.N,
+				E: rsaKey.E,
+			},
+			D: rsaKey.D,
+			Primes: rsaKey.Primes,
+		}
+		if rsaKey.Precomputed.Dp != nil {
+			priv.Precomputed = PrecomputedValues{
+				Dp: rsaKey.Precomputed.Dp,
+				Dq: rsaKey.Precomputed.Dq,
+				Qinv: rsaKey.Precomputed.Qinv,
+			}
+		}
+		return priv
 	}
 	k, err := x509.ParsePKCS1PrivateKey(p.Bytes)
 	if err != nil {
 		panic(err)
 	}
-	return k
+	// Convert from crypto/rsa to drsa
+	priv := &PrivateKey{
+		PublicKey: PublicKey{
+			N: k.N,
+			E: k.E,
+		},
+		D: k.D,
+		Primes: k.Primes,
+	}
+	if k.Precomputed.Dp != nil {
+		priv.Precomputed = PrecomputedValues{
+			Dp: k.Precomputed.Dp,
+			Dq: k.Precomputed.Dq,
+			Qinv: k.Precomputed.Qinv,
+		}
+	}
+	return priv
 }
 
 var rsaPrivateKey = test1024Key
@@ -713,7 +747,7 @@ func BenchmarkSignPKCS1v15(b *testing.B) {
 		})
 	})
 	// This is different from "2048" because it's only the public precomputed
-	// values, and not the crypto/internal/fips140/rsa.PrivateKey.
+	// values, and not the crypto/internal/fips140/drsa.PrivateKey.
 	b.Run("2048/noprecomp/AllValues", func(b *testing.B) {
 		benchmarkSignPKCS1v15(b, &PrivateKey{
 			PublicKey: test2048Key.PublicKey,

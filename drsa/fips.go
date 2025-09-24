@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package rsa
+package drsa
 
 import (
 	"crypto"
-	"crypto/internal/boring"
-	"crypto/internal/fips140/rsa"
-	"crypto/internal/fips140hash"
-	"crypto/internal/fips140only"
+	"github.com/jaekwon/openpgp/drsa/internal/boring"
+	"github.com/jaekwon/openpgp/drsa/internal/fips140/rsa"
+	"github.com/jaekwon/openpgp/drsa/internal/fips140hash"
+	"github.com/jaekwon/openpgp/drsa/internal/fips140only"
 	"errors"
 	"hash"
 	"io"

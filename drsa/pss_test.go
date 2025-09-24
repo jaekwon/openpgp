@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package rsa_test
+package drsa_test
 
 import (
 	"bufio"
 	"compress/bzip2"
 	"crypto"
-	"crypto/internal/fips140"
+	"github.com/jaekwon/openpgp/drsa/internal/fips140"
 	"crypto/rand"
-	. "crypto/rsa"
+	. "github.com/jaekwon/openpgp/drsa"
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/hex"

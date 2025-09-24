@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package rsa_test
+package drsa_test
 
 import (
 	"bytes"
 	"crypto"
 	"crypto/rand"
-	. "crypto/rsa"
+	. "github.com/jaekwon/openpgp/drsa"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/x509"
@@ -293,7 +293,11 @@ func parsePublicKey(s string) *PublicKey {
 	if err != nil {
 		panic(err)
 	}
-	return k
+	// Convert from crypto/rsa to drsa
+	return &PublicKey{
+		N: k.N,
+		E: k.E,
+	}
 }
 
 func TestShortPKCS1v15Signature(t *testing.T) {

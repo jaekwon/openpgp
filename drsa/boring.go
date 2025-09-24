@@ -4,12 +4,12 @@
 
 //go:build boringcrypto
 
-package rsa
+package drsa
 
 import (
-	"crypto/internal/boring"
-	"crypto/internal/boring/bbig"
-	"crypto/internal/boring/bcache"
+	"github.com/jaekwon/openpgp/drsa/internal/boring"
+	"github.com/jaekwon/openpgp/drsa/internal/boring/bbig"
+	"github.com/jaekwon/openpgp/drsa/internal/boring/bcache"
 	"math/big"
 )
 

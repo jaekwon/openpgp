@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package rsa
+package drsa // XXX: modified for determinism
 
 import (
-	"crypto/internal/boring"
-	"crypto/internal/fips140/rsa"
-	"crypto/internal/fips140only"
-	"crypto/internal/randutil"
+	"github.com/jaekwon/openpgp/drsa/internal/boring"
+	"github.com/jaekwon/openpgp/drsa/internal/fips140/rsa"
+	"github.com/jaekwon/openpgp/drsa/internal/fips140only"
+	// "github.com/jaekwon/openpgp/drsa/internal/randutil" // XXX: modified for determinism
 	"crypto/subtle"
 	"errors"
 	"io"
@@ -48,7 +48,7 @@ func EncryptPKCS1v15(random io.Reader, pub *PublicKey, msg []byte) ([]byte, erro
 		return nil, err
 	}
 
-	randutil.MaybeReadByte(random)
+	// randutil.MaybeReadByte(random) // XXX: modified for determinism
 
 	k := pub.Size()
 	if len(msg) > k-11 {

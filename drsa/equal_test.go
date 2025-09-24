@@ -2,17 +2,18 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package rsa_test
+package drsa_test
 
 import (
 	"crypto"
 	"crypto/rsa"
+	. "github.com/jaekwon/openpgp/drsa"
 	"crypto/x509"
 	"testing"
 )
 
 func TestEqual(t *testing.T) {
-	t.Setenv("GODEBUG", "rsa1024min=0")
+	t.Setenv("GODEBUG", "rsa1024min=0") // Allow 512-bit keys for testing
 
 	private := test512Key
 	public := &private.PublicKey
@@ -20,14 +21,14 @@ func TestEqual(t *testing.T) {
 	if !public.Equal(public) {
 		t.Errorf("public key is not equal to itself: %v", public)
 	}
-	if !public.Equal(crypto.Signer(private).Public().(*rsa.PublicKey)) {
+	if !public.Equal(crypto.Signer(private).Public().(*PublicKey)) {
 		t.Errorf("private.Public() is not Equal to public: %q", public)
 	}
 	if !private.Equal(private) {
 		t.Errorf("private key is not equal to itself: %v", private)
 	}
 
-	enc, err := x509.MarshalPKCS8PrivateKey(private)
+	enc, err := x509.MarshalPKCS8PrivateKey(ToCryptoRSA(private))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,10 +36,11 @@ func TestEqual(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !public.Equal(decoded.(crypto.Signer).Public()) {
+	rsaDecoded := decoded.(*rsa.PrivateKey)
+	if !public.Equal(&PublicKey{N: rsaDecoded.N, E: rsaDecoded.E}) {
 		t.Errorf("public key is not equal to itself after decoding: %v", public)
 	}
-	if !private.Equal(decoded) {
+	if !private.Equal(FromCryptoRSA(decoded.(*rsa.PrivateKey))) {
 		t.Errorf("private key is not equal to itself after decoding: %v", private)
 	}
 

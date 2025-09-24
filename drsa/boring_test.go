@@ -7,7 +7,7 @@
 // Note: Can run these tests against the non-BoringCrypto
 // version of the code by using "CGO_ENABLED=0 go test".
 
-package rsa
+package drsa
 
 import (
 	"crypto"

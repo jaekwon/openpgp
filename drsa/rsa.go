@@ -39,21 +39,22 @@
 // test-only 2048-bit key.
 //
 // [GenerateKey (TestKey)]: https://pkg.go.dev/crypto/rsa#example-GenerateKey-TestKey
-package rsa
+package drsa // XXX: modified for determinism
 
 import (
 	"crypto"
-	"crypto/internal/boring"
-	"crypto/internal/boring/bbig"
-	"crypto/internal/fips140/bigmod"
-	"crypto/internal/fips140/rsa"
-	"crypto/internal/fips140only"
-	"crypto/internal/randutil"
-	"crypto/rand"
+	"github.com/jaekwon/openpgp/drsa/internal/boring"
+	"github.com/jaekwon/openpgp/drsa/internal/boring/bbig"
+	"github.com/jaekwon/openpgp/drsa/internal/fips140/bigmod"
+	"github.com/jaekwon/openpgp/drsa/internal/fips140/rsa"
+	"github.com/jaekwon/openpgp/drsa/internal/fips140only"
+	// "github.com/jaekwon/openpgp/drsa/internal/randutil" // XXX: modified for determinism
+	// "crypto/rand" // XXX: modified for determinism
+	"github.com/jaekwon/openpgp/drsa/internal/drand" // XXX: modified for determinism
 	"crypto/subtle"
 	"errors"
 	"fmt"
-	"internal/godebug"
+	"github.com/jaekwon/openpgp/drsa/internal/godebug"
 	"io"
 	"math"
 	"math/big"
@@ -394,7 +395,7 @@ func GenerateMultiPrimeKey(random io.Reader, nprimes int, bits int) (*PrivateKey
 		return nil, errors.New("crypto/rsa: multi-prime RSA is not allowed in FIPS 140-only mode")
 	}
 
-	randutil.MaybeReadByte(random)
+	// randutil.MaybeReadByte(random) // XXX: modified for determinism
 
 	priv := new(PrivateKey)
 	priv.E = 65537
@@ -439,7 +440,7 @@ NextSetOfPrimes:
 		}
 		for i := 0; i < nprimes; i++ {
 			var err error
-			primes[i], err = rand.Prime(random, todo/(nprimes-i))
+			primes[i], err = drand.Prime(random, todo/(nprimes-i)) // XXX: modified for determinism
 			if err != nil {
 				return nil, err
 			}

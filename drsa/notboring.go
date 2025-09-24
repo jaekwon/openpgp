@@ -4,9 +4,9 @@
 
 //go:build !boringcrypto
 
-package rsa
+package drsa
 
-import "crypto/internal/boring"
+import "github.com/jaekwon/openpgp/drsa/internal/boring"
 
 func boringPublicKey(*PublicKey) (*boring.PublicKeyRSA, error) {
 	panic("boringcrypto: not available")
