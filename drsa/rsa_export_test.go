@@ -4,4 +4,11 @@
 
 package drsa
 
+import "os"
+
+func init() {
+	// Allow small RSA keys for testing
+	os.Setenv("GODEBUG", "rsa1024min=0")
+}
+
 var NonZeroRandomBytes = nonZeroRandomBytes

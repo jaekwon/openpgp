@@ -36,6 +36,8 @@ func TestKeyGeneration(t *testing.T) {
 	for _, size := range sizes {
 		t.Run(fmt.Sprintf("%d", size), func(t *testing.T) {
 			if size < 1024 {
+				// Clear GODEBUG to test that small keys are rejected
+				t.Setenv("GODEBUG", "")
 				_, err := GenerateKey(rand.Reader, size)
 				if err == nil {
 					t.Errorf("GenerateKey(%d) succeeded without GODEBUG", size)
@@ -45,6 +47,11 @@ func TestKeyGeneration(t *testing.T) {
 			priv, err := GenerateKey(rand.Reader, size)
 			if err != nil {
 				t.Errorf("GenerateKey(%d): %v", size, err)
+				return
+			}
+			if priv == nil {
+				t.Errorf("GenerateKey(%d) returned nil key", size)
+				return
 			}
 			if bits := priv.N.BitLen(); bits != size {
 				t.Errorf("key too short (%d vs %d)", bits, size)
@@ -374,7 +381,9 @@ func testEverything(t *testing.T, priv *PrivateKey) {
 		t.Errorf("DecryptPKCS1v15 accepted a long ciphertext")
 	}
 
-	der, err := x509.MarshalPKCS8PrivateKey(priv)
+	// Convert to crypto/rsa for x509 marshaling
+	cryptoKey := ToCryptoRSA(priv)
+	der, err := x509.MarshalPKCS8PrivateKey(cryptoKey)
 	if err != nil {
 		t.Errorf("MarshalPKCS8PrivateKey: %v", err)
 	}
@@ -382,11 +391,13 @@ func testEverything(t *testing.T, priv *PrivateKey) {
 	if err != nil {
 		t.Errorf("ParsePKCS8PrivateKey: %v", err)
 	}
-	if !key.(*PrivateKey).Equal(priv) {
+	// Convert back from crypto/rsa to drsa for comparison
+	drsaKey := FromCryptoRSA(key.(*rsa.PrivateKey))
+	if !drsaKey.Equal(priv) {
 		t.Errorf("private key mismatch")
 	}
 
-	der, err = x509.MarshalPKIXPublicKey(&priv.PublicKey)
+	der, err = x509.MarshalPKIXPublicKey(&cryptoKey.PublicKey)
 	if err != nil {
 		t.Errorf("MarshalPKIXPublicKey: %v", err)
 	}
@@ -394,12 +405,21 @@ func testEverything(t *testing.T, priv *PrivateKey) {
 	if err != nil {
 		t.Errorf("ParsePKIXPublicKey: %v", err)
 	}
-	if !pub.(*PublicKey).Equal(&priv.PublicKey) {
+	// Convert crypto/rsa.PublicKey to drsa.PublicKey for comparison
+	cryptoPubKey := pub.(*rsa.PublicKey)
+	drsaPubKey := &PublicKey{
+		N: cryptoPubKey.N,
+		E: cryptoPubKey.E,
+	}
+	if !drsaPubKey.Equal(&priv.PublicKey) {
 		t.Errorf("public key mismatch")
 	}
 }
 
 func TestKeyTooSmall(t *testing.T) {
+	// Clear GODEBUG to ensure small keys are rejected
+	t.Setenv("GODEBUG", "")
+	
 	checkErr := func(err error) {
 		t.Helper()
 		if err == nil {

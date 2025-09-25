@@ -15,11 +15,17 @@ import (
 	"encoding/asn1"
 	"encoding/hex"
 	"math/big"
+	"os"
 	"runtime"
 	"runtime/debug"
 	"sync"
 	"testing"
 )
+
+func init() {
+	// Allow small RSA keys for testing
+	os.Setenv("GODEBUG", "rsa1024min=0")
+}
 
 func TestBoringASN1Marshal(t *testing.T) {
 	t.Setenv("GODEBUG", "rsa1024min=0")

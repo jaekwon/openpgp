@@ -5,6 +5,11 @@
 // Package godebug provides a minimal stub implementation for the drsa package.
 package godebug
 
+import (
+	"os"
+	"strings"
+)
+
 // Setting represents a single GODEBUG setting.
 type Setting struct {
 	name string
@@ -18,9 +23,19 @@ func New(name string) *Setting {
 
 // Value returns the current value of the setting.
 func (s *Setting) Value() string {
-	// For the rsa1024min setting, return empty string by default
-	// which means RSA keys must be at least 1024 bits
-	return s.value
+	// Parse GODEBUG environment variable on every call
+	// This ensures we pick up settings from TestMain/init
+	godebug := os.Getenv("GODEBUG")
+	for _, pair := range strings.Split(godebug, ",") {
+		if pair == "" {
+			continue
+		}
+		parts := strings.SplitN(pair, "=", 2)
+		if len(parts) == 2 && parts[0] == s.name {
+			return parts[1]
+		}
+	}
+	return ""
 }
 
 // IncNonDefault records that a non-default value was used.
