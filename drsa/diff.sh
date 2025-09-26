@@ -7,11 +7,10 @@ set -e
 
 echo "Generating diff between drsa and Go's crypto/rsa"
 
-GO_RSA=$(go env GOROOT)/src/crypto/rsa
 GO_CRYPTO=$(go env GOROOT)/src/crypto
 
-if [ ! -d "$GO_RSA" ]; then
-    echo "Error: Go source not found at $GO_RSA"
+if [ ! -d "$GO_CRYPTO/rsa" ]; then
+    echo "Error: Go source not found at $GO_CRYPTO/rsa"
     exit 1
 fi
 
@@ -21,26 +20,20 @@ mkdir -p "$OUT_DIR"
 
 echo "Generating diffs..."
 
-# Files in root directory (crypto/rsa)
-for file in *.go; do
-    if [ -f "$GO_RSA/$file" ]; then
-        diff -u "$GO_RSA/$file" "$file" > "$OUT_DIR/$file.diff" || true
-        echo "  M $file"
+for file in $(find . -name "*.go" -type f | grep -v "^\./upstream-diff" | sed 's|^\./||'); do
+    # Map drsa paths to crypto paths
+    if [[ "$file" == internal/* ]]; then
+        go_file="$GO_CRYPTO/$file"
     else
-        diff -u /dev/null "$file" > "$OUT_DIR/$file.diff" || true
-        echo "  A $file"
+        go_file="$GO_CRYPTO/rsa/$file"
     fi
-done
-
-# Internal packages (map internal/ to crypto/internal/)
-for file in $(find internal -name "*.go" -type f); do
-    go_file="$GO_CRYPTO/$file"
+    
+    mkdir -p "$OUT_DIR/$(dirname "$file")"
+    
     if [ -f "$go_file" ]; then
-        mkdir -p "$OUT_DIR/$(dirname "$file")"
         diff -u "$go_file" "$file" > "$OUT_DIR/$file.diff" || true
         echo "  M $file"
     else
-        mkdir -p "$OUT_DIR/$(dirname "$file")"
         diff -u /dev/null "$file" > "$OUT_DIR/$file.diff" || true
         echo "  A $file"
     fi
